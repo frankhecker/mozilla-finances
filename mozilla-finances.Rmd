@@ -1,0 +1,483 @@
+---
+title: "Overview of Mozilla Finances"
+author: "Frank Hecker"
+date: "8/15/2020"
+output:
+  html_document:
+    fig_width: 9
+    fig_height: 4.5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this document I provide a graphical overview of the combined
+finances of the nonprofit Mozilla Foundation and the Mozilla
+Corporation, its wholly-owned subsidiary.
+
+For those readers unfamiliar with the [R statistical software][r] and
+the additional [Tidyverse software][tv] I use to manipulate and plot
+data, I’ve included some additional explanation of various steps.  For
+more information check out the the tutorial “[Getting started with the
+Tidyverse][gs]”.
+
+[r]: https://www.r-project.org/
+[tv]: https://www.tidyverse.org/
+[gs]: https://www.datacamp.com/community/tutorials/tidyverse-tutorial-r
+
+## Setup and data preparation
+
+### Libraries
+
+I use the following R packages for the following purposes:
+
+* tidyverse: do general data manipulation.
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+### Data sources
+
+I use data from the independent auditors’ reports and consolidated
+financial statements for the combined Mozilla organizations for 2005
+(the year in which the Mozilla Corporation was founded) to 2018 (the
+latest report available at the time of writing). I extracted data from
+those statements into the following files:
+
+* `mozilla-revenues.csv`. CSV file of data from the financial
+  statements relating to revenues coming in to the combined
+  organizations from third parties.
+* `mozilla-expenses.csv`. CSV file of data from the financial
+  statements relating to expenses incurred by the combined
+  organizations.
+
+The files do _not_ contain any data relating to transfers between the
+organizations, for example, royalties paid to the Mozilla Foundation
+by the Mozilla Corporation for use of the Mozilla, Firefox, and other
+trademarks, or money paid by the Mozilla Foundation to the Mozilla
+Corporation for office space, etc. That data can be found in the IRS
+Form 990 documents filed by the Mozilla Foundation to the US Internal
+Revenue Service. Analyzing that data is a potential future project for
+me or someone else.
+
+The file `mozilla-revenues.csv` contains multiple fields as shown
+below. All values are in USD. Positive contributions to revenue
+(gains) are stored as positive numbers, while negative contributions
+to revenue (losses) are stored as negative numbers.
+
+* `revenue`. Total revenue from all sources. Reported as “Total
+  revenue and support” for 2005 to 2008 and 2018 and as “Total
+  unrestricted revenue and support” for 2009 to 2017.
+* `royalties`. Royalties paid to the combined organizations by third
+  parties. (This is not to be confused with royalties paid to the
+  Mozilla Foundation by the Mozilla Corporation, which are considered
+  inter-organizational transfers and are not reported on the
+  consolidated financial statements.) Reported as “Royalties”
+  beginning in 2008. For 2005 to 2007 this category was instead
+  reported as two different categories, “Royalties - Search” and
+  “Royalties - Product Sales”.
+* `royalties_search`. Royalties from search engine providers. Reported
+  as “Royalties - search” for 2005 to 2007. Not reported separately
+  beginning in 2008.
+* `royalties_product`. Royalties received in connection with product
+  sales. Reported as “Royalties - product sales” for 2005 to 2007. Not
+  reported separately beginning in 2008.
+* `subs_ads`. Revenue from subscriptions and advertising. Reported as
+  “Subscription and advertising revenue“ beginning in 2017. Not
+  reported separately for 2005 to 2016.
+* `product`. Revenue from products (as distinguished from product
+  royalties). Reported as “Product revenues” for 2005 to 2007. Not
+  reported separately beginning in 2008.
+* `services`. Revenue from services provided under contracts with
+  third parties.  Reported as “Contracted services” for 2005 to
+  2007. Not reported separately beginning in 2008.
+* `interest`. Interest and dividends received from third
+  parties. Reported as “Interest income” for 2005 and 2006 and as
+  “Interest and dividend income” beginning in 2007.
+* `investments`. Gains or losses resulting from investments made by
+  either organization. Reported variously as “Unrealized losses from
+  investments“ (2005), “Unrealized gain (loss) from investments”
+  (2006), “Net realized and unrealized gain from investments” (2007,
+  2013--2014), “Net realized and unrealized (loss) gain from
+  investments” (2008, 2011), “Net realized and unrealized loss from
+  investments” (2009--2010), “Net realized and unrealized gain (loss)
+  from investments“ (2012, 2015--2017), and “Net realized and
+  unrealized (loss) gain on investments, net” (2018).
+* `contributions`. Contributions received from third parties, e.g., as
+  grants or donations to the Mozilla Foundation. Reported as
+  “Contributions” for 2005 and 2006 and for 2008 and subsequent years,
+  and as “Contributions - Unrestricted” in 2007.
+* `other`. Income not included in any of the other
+  categories. Reported as “Other income” for 2005 and 2006 and as
+  “Other” beginning in 2015. Not reported separately for 2007 to 2014.
+* `forex`. Gains or losses from foreign currency exchange. Reported as
+   “Foreign currency exchange (loss) gain” beginning in 2009, except
+   for 2017 when it was reported as “Foreign currency exchange gain
+   (loss)”. Not reported separately for 2005 to 2008.
+* `assets`. Losses resulting from the sale of assets. Reported as
+  “Loss on sales of assets” beginning in 2009. Not reported separately
+  for 2005 to 2008.
+* `released`. Assets released from previous restrictions and made
+  available for use on an unrestricted basis. (For example, this
+  apparently applies to certain grants made to the Mozilla Foundation
+  by third parties.) Reported as “Net assets released from
+  restrictions” beginning in 2009. Not reported separately in 2005,
+  2006, and 2008. The 2007 statements have a category for restricted
+  contributions that is related to this.
+
+The file `mozilla-expenses.csv` contains fields as shown below. All
+values are in USD. Expenses are stored as positive numbers, so must be
+subtracted from revenues to determine profits (or more correctly, net
+gains in assets, since the Mozilla Foundation does not have profits as
+such).
+
+* `expenses`. Total expenses for all categories. Reported as “Total
+  expenses”.
+* `software`. Expenses related to software development. Reported as
+  `Software development`.
+* `programs`. Expenses related to various projects and programs
+  undertaken in support of the overall nonprofit goals of the combined
+  organizations, including events, fellowships, sponsorships, and
+  grants made to third parties. Reported as “Program services” for
+  2006 to 2017 and as “Other program services” in 2018.
+* `depreciation_program`. Depreciation expenses related to software
+  development and other program services. Reported as “Depreciation”
+  under “Program” for 2013 to 2017. Not reported separately for 2018.
+* `marketing`. Expenses related to sales, branding, and
+  marketing. Reported as `Sales and marketing` for 2005 to 2007 and as
+  “Branding and marketing” beginning in 2008.
+* `general`. Expenses related to running the organizations, including
+  employee salaries and benefits, facilities, etc. Reported as
+  “General and administrative”.
+* `depreciation_support`. Depreciation expenses related to marketing
+  and general and administrative activities in support of the combined
+  organizations. Reported as “Depreciation” under “Support” for 2013
+  to 2017. Not reported separately for 2018.
+* `fundraising`. Expenses related to raising funds, e.g., to solicit
+  individual donations or grants from third-parties. Reported as
+  “Fundraising and development” beginning in 2016.
+* `depreciation_fundraising`. Depreciation expenses related to
+  fundraising. Reported as “Depreciation” under “Fundraising” for 2016
+  and 2017. Not reported separately for 2018.
+* `other`. Other expenses not allocated to any of the categories above.
+  Reported as “Other expenses” for 2011 and 2012.
+
+### Reading in the data
+
+I begin by reading in the two CSV files into the data frames `revenues`
+and `expenses`.
+
+```{r read_csv}
+revenues <- read_csv("mozilla-revenues.csv")
+expenses <- read_csv("mozilla-expenses.csv")
+```
+
+I then clean the data to make it easier to manipulate:
+
+* I need to treat royalties specially: prior to 2008 royalties from
+  search engine providers were reported separately from other
+  royalties, while in 2008 and subsequent years they were
+  combined. For years in which the `royalties` data is missing I
+  calculate `royalties` as the sum of the product and search
+  royalties. I then remove the data for product and search royalties
+  as no longer needed.
+* To make further calculations easier, I replace any remaining missing
+  values with zero in both the revenue and expense tables.
+
+```{r royalties}
+revenues <- revenues %>%
+  mutate(royalties = ifelse(is.na(royalties),
+                            royalties_product + royalties_search,
+                            royalties)) %>%
+  select(-royalties_product, -royalties_search) %>%
+  replace(is.na(.), 0)
+
+expenses <- expenses %>%
+  replace(is.na(.), 0)
+```
+
+## Analysis
+
+## Mozilla revenue vs. expenses
+
+I first create an overview showing overall revenues versus expenses
+for the years covered by the data.
+
+I first create a new table `r_vs_e` by joining the `revenues` and
+`expenses` tables on their common field `year`, and then retaining
+only the `year`, `revenue`, and `expenses` fields.
+
+```{r r_vs_e}
+r_vs_e <- inner_join(revenues, expenses, by = "year") %>%
+  select(year, revenue, expenses)
+```
+
+I then plot the `revenue` and `expenses` data with `year` on the x-axis.
+
+```{r ggplot}
+r_vs_e %>%
+  mutate(revenue = revenue / 1000000, expenses = expenses / 1000000) %>%
+  pivot_longer(revenue:expenses) %>%
+  ggplot() +
+  geom_line(
+    mapping = aes(x = year, y = value, group = name, color = name),
+    size = 0.8
+  ) +
+  ylab("") +
+  xlab("Year") +
+  scale_x_continuous(breaks = seq(2002, 2018, 2)) +
+  scale_y_continuous(breaks = seq(0, 600, 100),
+                     labels = scales::dollar_format(suffix = "M")) +
+  scale_color_manual(values = c("#E69F00", "#56B4E9"),
+                     breaks = c("revenue", "expenses"),
+                     labels = c("Revenue", "Expenses")) +
+  labs(title="Mozilla Revenue vs. Expenses",
+       subtitle="Mozilla Foundation and Mozilla Corporation Combined",
+       caption=paste0(
+         "Data source:",
+         "\n    Mozilla Foundation and Subsidiary Independent Auditors’ Report and Consolidated Financial Statements, 2005-2018")) +
+  theme_minimal() +
+  theme(axis.title.x=element_text(margin=margin(t=10))) +
+  theme(axis.title.y=element_text(margin=margin(r=10))) +
+  theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
+  theme(legend.title = element_blank())
+```
+
+### Revenue breakdown over the years
+
+I next want to look at broad categories of revenue and how they have
+grown or shrunk over the years. To do this I categorize the various
+types of revenue as follows:
+
+* I keep royalties as a separate category, since it has been by far
+  the major source of revenue over the years, with almost all of it
+  coming from Google and other search engine providers.
+* I also keep subscription and ad revenue as a separate category,
+  since it presumably will be where new sources of revenue such as the
+  Mozilla VPN get reported.
+* I combine the `contributions` and `released` variables into a single
+  variable `grants_donations`, based on my understanding that the
+  `released` values primarily reflect grants to the Mozilla Foundation
+  that have associated conditions placed on them, with the money not
+  being released for unrestricted use until the conditions are
+  satisfied.
+* I combine all other sources of revenue (or losses) into a single
+  category `misc_revenue`.
+
+```{r revenue_categories}
+revenue_categories <- revenues %>%
+  mutate(grants_donations = contributions + released,
+         misc_revenue = product + services + interest + investments + other + forex + assets) %>%
+  select(year, revenue, royalties, subs_ads, grants_donations, misc_revenue)
+```
+
+I then plot the various categories of revenue for the years for which
+I have data.
+
+```{r plot_revenue_categories}
+revenue_category_palette <- c("#000000", "#E69F00", "#56B4E9",
+                              "#009E73", "#CC79A7")
+
+revenue_categories %>%
+  mutate(across(revenue:misc_revenue, ~.x / 1000000)) %>%
+  pivot_longer(revenue:misc_revenue) %>%
+  ggplot() +
+  geom_line(
+    mapping = aes(x = year, y = value, group = name, color = name),
+    size = 0.8
+  ) +
+  ylab("") +
+  xlab("Year") +
+  scale_x_continuous(breaks = seq(2002, 2018, 2)) +
+  scale_y_continuous(breaks = seq(0, 600, 100),
+                     labels = scales::dollar_format(suffix = "M")) +
+  scale_color_manual(values = revenue_category_palette,
+                     breaks = c("revenue", "royalties", "subs_ads",
+                                "grants_donations", "misc_revenue"),
+                     labels = c("Total Revenue",
+                                "Royalties",
+                                "Subscriptions and advertising",
+                                "Grants and donations",
+                                "Miscellaneous")) +
+  labs(title="Mozilla Revenue Categories",
+       subtitle="Mozilla Foundation and Mozilla Corporation Combined",
+       caption=paste0(
+         "Data source:",
+         "\n    Mozilla Foundation and Subsidiary Independent Auditors’ Report and Consolidated Financial Statements, 2005-2018")) +
+  theme_minimal() +
+  theme(axis.title.x=element_text(margin=margin(t=10))) +
+  theme(axis.title.y=element_text(margin=margin(r=10))) +
+  theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
+  theme(legend.title = element_blank())
+```
+
+I then plot the revenue categories as a percentage of total revenue.
+
+```{r plot_revenue_categories_pct}
+revenue_categories %>%
+  mutate(across(revenue:misc_revenue, ~100 * .x / revenue)) %>%
+  pivot_longer(revenue:misc_revenue) %>%
+  ggplot() +
+  geom_line(
+    mapping = aes(x = year, y = value, group = name, color = name),
+    size = 0.8
+  ) +
+  ylab("") +
+  xlab("Year") +
+  scale_x_continuous(breaks = seq(2002, 2018, 2)) +
+  scale_y_continuous(breaks = seq(0, 100, 20),
+                     labels = scales::percent_format(scale = 1)) +
+  scale_color_manual(values = revenue_category_palette,
+                     breaks = c("revenue", "royalties", "subs_ads",
+                                "grants_donations", "misc_revenue"),
+                     labels = c("Total Revenue",
+                                "Royalties",
+                                "Subscriptions and advertising",
+                                "Grants and donations",
+                                "Miscellaneous")) +
+  labs(title="Mozilla Revenue Categories as a Percentage of Total Revenue",
+       subtitle="Mozilla Foundation and Mozilla Corporation Combined",
+       caption=paste0(
+         "Data source:",
+         "\n    Mozilla Foundation and Subsidiary Independent Auditors’ Report and Consolidated Financial Statements, 2005-2018")) +
+  theme_minimal() +
+  theme(axis.title.x=element_text(margin=margin(t=10))) +
+  theme(axis.title.y=element_text(margin=margin(r=10))) +
+  theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
+  theme(legend.title = element_blank())
+```
+
+### Expense breakdown over the years
+
+I next want to look at broad categories of expenses and how they have
+grown or shrunk over the years. To do this I categorize the various
+types of expenses as follows:
+
+* I keep expenses related to software development (`software`) as a
+  separate category, since it represents the main activity of the
+  combined organizations and reflects value provided by Mozilla to the
+  world at large in the form of open source software products.
+* I also keep program-related expenses (`programs`) as a separate
+  category, since it represents another form of value provided by
+  Mozilla to the world at large, in the form of grants, fellowships,
+  sponsorships, events, and so on.
+* I retain marketing expenses, general and administrative expenses,
+  and fundraising expensese as their own categories.
+* I combine all other expenses, including depreciation-related
+  expenses, into a single category `misc_expenses`. (I wasn’t sure
+  exactly what to do with depreciation expenses, since as reported
+  they can’t be exactly assigned to the various other categories.)
+
+```{r expense_categories}
+expense_categories <- expenses %>%
+  mutate(misc_expenses = depreciation_program + depreciation_support +
+           depreciation_fundraising + other) %>%
+  select(year, expenses, programs, software, marketing, general,
+         fundraising, misc_expenses)
+```
+
+I then plot the various categories of expenses for the years for which
+I have data.
+
+```{r plot_expense_categories}
+expense_category_palette <- c("#000000", "#E69F00", "#56B4E9", "#009E73",
+                              "#0072B2", "#D55E00", "#CC79A7")
+
+expense_categories %>%
+  mutate(across(expenses:misc_expenses, ~.x / 1000000)) %>%
+  pivot_longer(expenses:misc_expenses) %>%
+  ggplot() +
+  geom_line(
+    mapping = aes(x = year, y = value, group = name, color = name),
+    size = 0.8
+  ) +
+  ylab("") +
+  xlab("Year") +
+  scale_x_continuous(breaks = seq(2002, 2018, 2)) +
+  scale_y_continuous(breaks = seq(0, 600, 100),
+                     labels = scales::dollar_format(suffix = "M")) +
+  scale_color_manual(values = expense_category_palette,
+                     breaks = c("expenses", "software", "general",
+                                "marketing", "programs", "fundraising",
+                                "misc_expenses"),
+                     labels = c("Total Expenses",
+                                "Software development",
+                                "General and administrative",
+                                "Marketing",
+                                "Programs",
+                                "Fundraising",
+                                "Miscellaneous Expenses")) +
+  labs(title="Mozilla Expense Categories",
+       subtitle="Mozilla Foundation and Mozilla Corporation Combined",
+       caption=paste0(
+         "Data source:",
+         "\n    Mozilla Foundation and Subsidiary Independent Auditors’ Report and Consolidated Financial Statements, 2005-2018")) +
+  theme_minimal() +
+  theme(axis.title.x=element_text(margin=margin(t=10))) +
+  theme(axis.title.y=element_text(margin=margin(r=10))) +
+  theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
+  theme(legend.title = element_blank())
+```
+
+I then plot the expense categories as a percentage of total expenses:
+
+```{r plot_expense_categories_pct}
+expense_categories %>%
+  mutate(across(expenses:misc_expenses, ~100 * .x / expenses)) %>%
+  pivot_longer(expenses:misc_expenses) %>%
+  ggplot() +
+  geom_line(
+    mapping = aes(x = year, y = value, group = name, color = name),
+    size = 0.8
+  ) +
+  ylab("") +
+  xlab("Year") +
+  scale_x_continuous(breaks = seq(2002, 2018, 2)) +
+  scale_y_continuous(breaks = seq(0, 100, 20),
+                     labels = scales::percent_format(scale = 1)) +
+  scale_color_manual(values = expense_category_palette,
+                     breaks = c("expenses", "software", "general",
+                                "marketing", "programs", "fundraising",
+                                "misc_expenses"),
+                     labels = c("Total Expenses",
+                                "Software development",
+                                "General and administrative",
+                                "Marketing",
+                                "Programs",
+                                "Fundraising",
+                                "Miscellaneous Expenses")) +
+  labs(title="Mozilla Expense Categories as a Percentage of Total Expenses",
+       subtitle="Mozilla Foundation and Mozilla Corporation Combined",
+       caption=paste0(
+         "Data source:",
+         "\n    Mozilla Foundation and Subsidiary Independent Auditors’ Report and Consolidated Financial Statements, 2005-2018")) +
+  theme_minimal() +
+  theme(axis.title.x=element_text(margin=margin(t=10))) +
+  theme(axis.title.y=element_text(margin=margin(r=10))) +
+  theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
+  theme(legend.title = element_blank())
+```
+
+### Environment
+
+I used the following R environment in doing the analysis above:
+
+```{r sessionInfo}
+sessionInfo()
+```
+
+### Source code
+
+You can find the source code and data for this analysis at my
+[mozilla-finances public code repository][mf]. This document and its
+associated source code and data are available for unrestricted use,
+distribution and modification under the terms of the [Creative Commons
+CC0 1.0 Universal (CC0 1.0) Public Domain Dedication][cc0].  Stated
+more simply, you’re free to do whatever you’d like with it.
+
+[mf]: https://github.com/frankhecker/mozilla-finances
+[cc0]: https://creativecommons.org/publicdomain/zero/1.0/
