@@ -1,5 +1,5 @@
 ---
-title: "Overview of Mozilla Finances"
+title: "A high-level overview of Mozilla finances"
 author: "Frank Hecker"
 date: "8/15/2020"
 output:
@@ -14,8 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In this document I provide a graphical overview of the combined
-finances of the nonprofit Mozilla Foundation and the Mozilla
+In this document I provide a high-level graphical overview of the
+combined finances of the nonprofit Mozilla Foundation and the Mozilla
 Corporation, its wholly-owned subsidiary.
 
 For those readers unfamiliar with the [R statistical software][r] and
@@ -45,8 +45,11 @@ library(tidyverse)
 I use data from the independent auditors’ reports and consolidated
 financial statements for the combined Mozilla organizations for 2005
 (the year in which the Mozilla Corporation was founded) to 2018 (the
-latest report available at the time of writing). I extracted data from
-those statements into the following files:
+latest report available at the time of writing). In particular I use
+data relating to activities and changes in net assets.
+
+I extracted data from the consolidated financial statements into the
+following files:
 
 * `mozilla-revenues.csv`. CSV file of data from the financial
   statements relating to revenues coming in to the combined
@@ -61,8 +64,8 @@ by the Mozilla Corporation for use of the Mozilla, Firefox, and other
 trademarks, or money paid by the Mozilla Foundation to the Mozilla
 Corporation for office space, etc. That data can be found in the IRS
 Form 990 documents filed by the Mozilla Foundation to the US Internal
-Revenue Service. Analyzing that data is a potential future project for
-me or someone else.
+Revenue Service, as well as in the notes to the consolidated financial
+statements.
 
 The file `mozilla-revenues.csv` contains multiple fields as shown
 below. All values are in USD. Positive contributions to revenue
@@ -247,7 +250,7 @@ r_vs_e %>%
   theme(legend.title = element_blank())
 ```
 
-### Revenue breakdown over the years
+### Revenue categories
 
 I next want to look at broad categories of revenue and how they have
 grown or shrunk over the years. To do this I categorize the various
@@ -351,7 +354,7 @@ revenue_categories %>%
   theme(legend.title = element_blank())
 ```
 
-### Expense breakdown over the years
+### Expense categories
 
 I next want to look at broad categories of expenses and how they have
 grown or shrunk over the years. To do this I categorize the various
@@ -461,6 +464,47 @@ expense_categories %>%
   theme(plot.caption=element_text(margin=margin(t=15), hjust=0)) +
   theme(legend.title = element_blank())
 ```
+
+## Appendix
+
+### Caveats
+
+I am not an expert in accounting, so I may have made various mistakes
+in my interpretation of the financial statements, as well as in the
+way I combined multiple revenue and expense items in broader
+categories.
+
+### To do
+
+Here are some other possible tasks for anyone who’d like to add to
+this article:
+
+* Extend the data set and graphs to 2019 when Mozilla releases its
+  2019 financial results. This should be a relatively simple task if
+  the 2019 results use the same categories as in 2018.
+* Extend the data set to 2003 and 2004, using data from the Mozilla
+  Foundation IRS Form 990 documents for those years. This will require
+  a bit of work to find the Form 990 equivalents to the various
+  revenue and expense categories in the consolidated financial
+  statements.
+* Do a more in-depth analysis of the expense categories, using the
+  information contained in the notes to the consolidated financial
+  statements. This will require a fair amount of work to track down
+  all the items and match them up with the higher-level categories in
+  the “Consolidated Statement of Activities and Change in Net Assets”
+  section of the statements.
+* Do an analysis of the assets and liabilities and cash flows sections
+  of the consolidated financial statements. This will require some
+  knowledge of accounting and how to read financial statements (more
+  than I possess, at least).
+
+### References
+
+Mozilla financial statements and Mozilla Foundation IRS Form 990
+documents are linked to from the [Mozilla Foundation public
+records][mfpr] page.
+
+[mfpr]: https://foundation.mozilla.org/en/about/public-records/
 
 ### Environment
 
